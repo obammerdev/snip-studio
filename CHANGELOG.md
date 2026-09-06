@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.3 — 2026-09-06
+
+- Replaced the capture selection renderer with a cached native preview. Dimming
+  happens once; dragging repaints changed strips, the outline, and the size label.
+- Removed expensive full-desktop redraws and large antialiased-outline buffers.
+- Released native preview buffers as soon as capture finishes or is canceled.
+- Kept selection coordinates in physical pixels across mixed-DPI monitors and
+  used the mouse-release position for accurate fast drags.
+- Added capture-preview pixel, geometry, repaint-region, and timing checks.
+
 ## 1.2.2 — 2026-09-06
 
 - Defaulted to software rendering to avoid persistent GPU driver buffers in a

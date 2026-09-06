@@ -62,6 +62,11 @@ acceleration** under **Settings → Performance**, then quit and reopen the app.
 Hardware acceleration can use substantially more memory, depending on the GPU
 driver and display setup. This preference affects Snip Studio only.
 
+The capture selection overlay uses its own native preview. It caches the dimmed
+desktop once and updates the changing selection directly, so the editor's
+software rendering preference does not slow the selection box. Preview buffers
+are released when the capture is accepted or canceled.
+
 Temporary capture and export buffers are collected after image work settles,
 including when the editor stays open. Memory can briefly rise while capturing.
 

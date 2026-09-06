@@ -96,6 +96,11 @@ The output is `lifecycle-probe.json`; private bytes mean committed private memor
 while working set includes shared pages. Neither is the private working set
 shown in Task Manager's default Memory column.
 
+`selection-performance.jsonl` reports completed native update-to-paint timings
+for growing and shrinking selections across the virtual desktop. Each cycle
+includes 120 requested updates; one repeated turnaround rectangle is skipped.
+These values do not measure the monitor's scanout or the full input hardware path.
+
 Use `--hardware-rendering` to compare GPU rendering, or `--software-rendering` to
 override a hardware preference during a diagnostic run. These switches do not
 change saved preferences. The lifecycle probe uses the normal idle cleanup, with

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -71,18 +72,31 @@ public partial class MainWindow
         var bitmap = new RenderTargetBitmap(bounds.Width, bounds.Height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual); bitmap.Freeze();
         var frame = new DesktopFrame(bitmap, bounds, displays, Array.Empty<DesktopWindow>());
-        var overlay = new CaptureOverlay(frame, "Region");
+        using var overlay = new CaptureOverlay(frame, "Region");
         try
         {
             overlay.Show(); await Task.Delay(250);
-            for (int i = 0; i < 20; i++)
+            if (NativeDesktop.WindowBounds(overlay.Handle) != bounds) throw new InvalidOperationException("Capture window must cover the physical virtual desktop exactly.");
+            using var process = Process.GetCurrentProcess();
+            var cpuBefore = process.TotalProcessorTime; var watch = Stopwatch.StartNew();
+            for (int i = 0; i < 120; i++)
             {
-                overlay.SelectForProbe(new PixelRect(bounds.X + 250, bounds.Y + 150, 600 + i * 10, 400));
-                await Task.Delay(16);
+                int step = i < 60 ? i : 119 - i;
+                overlay.SelectForProbe(new PixelRect(bounds.X + 250, bounds.Y + 150, 200 + step * (bounds.Width - 700) / 60, 200 + step * (bounds.Height - 450) / 60));
+                await Task.Delay(8);
             }
+            var latencies = overlay.PaintLatencies.OrderBy(v => v).ToArray();
+            if (latencies.Length < 100) throw new InvalidOperationException("The capture preview did not paint the selection updates.");
+            File.AppendAllText(Path.Combine(App.DataDirectory, "selection-performance.jsonl"), JsonSerializer.Serialize(new
+            {
+                Width = bounds.Width, Height = bounds.Height, Paints = latencies.Length,
+                MeanUpdateToPaintMilliseconds = latencies.Average(), P95UpdateToPaintMilliseconds = latencies[(int)((latencies.Length - 1) * .95)],
+                MaxUpdateToPaintMilliseconds = latencies[^1], ElapsedMilliseconds = watch.Elapsed.TotalMilliseconds,
+                CpuMilliseconds = (process.TotalProcessorTime - cpuBefore).TotalMilliseconds
+            }) + Environment.NewLine);
             overlay.SelectForProbe(new PixelRect(bounds.X + 250, bounds.Y + 150, 800, 450), finish: true);
             window.LoadImage(overlay.Result!, "Memory probe");
         }
-        finally { if (overlay.IsVisible) overlay.Close(); }
+        finally { if (overlay.Visible) overlay.Close(); }
     }
 }

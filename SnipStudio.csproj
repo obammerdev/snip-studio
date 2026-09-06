@@ -10,11 +10,11 @@
     <ApplicationIcon>Assets\SnipStudio.ico</ApplicationIcon>
     <AssemblyName>SnipStudio</AssemblyName>
     <RootNamespace>SnipStudio</RootNamespace>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Description>A thoughtful, native Windows capture and annotation studio.</Description>
     <Authors>Snip Studio</Authors>
     <Deterministic>true</Deterministic>
-    <!-- WPF owns DPI initialization; WinForms is used only for the notification icon. -->
+    <!-- WPF owns process DPI initialization, including the native capture window. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <DefaultItemExcludes>$(DefaultItemExcludes);.tools\**;artifacts\**;release\**</DefaultItemExcludes>
   </PropertyGroup>

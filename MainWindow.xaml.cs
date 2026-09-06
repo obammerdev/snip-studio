@@ -220,7 +220,8 @@ public partial class MainWindow : Window
             if (mode == "All displays") result = frame.Image;
             else
             {
-                _overlay = new CaptureOverlay(frame, mode); _overlay.ShowDialog(); result = _overlay.Result; _overlay = null;
+                using var overlay = new CaptureOverlay(frame, mode);
+                _overlay = overlay; overlay.ShowDialog(); result = overlay.Result; _overlay = null;
             }
             if (result != null)
             {

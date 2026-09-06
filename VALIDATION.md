@@ -1,5 +1,23 @@
 # Release verification
 
+## Version 1.2.3
+
+- 76 app checks passed, including native preview color preservation, dimming,
+  changed-region repainting, reverse square drags, and physical pixel bounds.
+- 23 installer lifecycle checks passed; the installed binary passed 71 headless
+  app checks using its bundled runtime.
+- The capture workload exercised a 6400×1440 virtual desktop across three
+  monitors, growing and shrinking the selection through 120 updates per cycle.
+  Native update-to-paint time averaged 4.2 ms on the first cycle and 2.5 ms on
+  subsequent cycles. The 95th percentile was 11.8 ms initially and 4.5 ms warmed.
+  These measure completed application painting, not display scanout latency.
+- Private committed memory settled at 40–52 MiB after the capture windows closed.
+  The editor's visible history and undo/redo remained intact through idle cleanup.
+- A real mouse drag crossed the negative-origin monitor boundary and returned
+  a 1531×337 image to the editor at the correct physical selection bounds.
+- Interactive window and screen selections returned the expected physical
+  dimensions; Escape canceled a capture while preserving the current image.
+
 ## Version 1.2.2
 
 - 68 app checks and 23 installer lifecycle checks passed. The installed binary

@@ -34,6 +34,30 @@ public static class SelfTests
         var bytes = new byte[100 * 80 * 4];
         for (int i = 0; i < bytes.Length; i += 4) { bytes[i] = 70; bytes[i + 1] = 150; bytes[i + 2] = 220; bytes[i + 3] = 255; }
         var source = BitmapSource.Create(100, 80, 192, 192, PixelFormats.Bgra32, null, bytes, 400); source.Freeze();
+        var dragStart = new System.Drawing.Point(-500, 200); var dragEnd = new System.Drawing.Point(250, 900);
+        Check(CaptureOverlay.DragBounds(dragStart, dragEnd, false, new(-1920, 0, 6400, 1440)) == new PixelRect(-500, 200, 750, 700), "Native selection tracks physical pixels across a negative monitor origin");
+        Check(CaptureOverlay.DragBounds(dragEnd, dragStart, true, new(-1920, 0, 6400, 1440)) == new PixelRect(-450, 200, 700, 700), "Shift constrains reverse drags to a square");
+        Check(CaptureOverlay.DragBounds(new(4400, 1400), new(4800, 1600), false, new(-1920, 0, 6400, 1440)) == new PixelRect(4400, 1400, 80, 40), "Native selection clips the final release position to desktop bounds");
+        using (var damage = CaptureOverlay.SelectionDamage(new(10, 10, 80, 60), new(20, 10, 80, 60)))
+        {
+            Check(damage.IsVisible(12, 40) && damage.IsVisible(95, 40), "Moving selection repaints both revealed and dimmed strips");
+            Check(!damage.IsVisible(50, 40) && damage.IsVisible(50, 10), "Selection repaint skips unchanged interior pixels and retains the border");
+        }
+        using (var originalPreview = new CaptureBitmap(source, dim: false))
+        using (var dimmedPreview = new CaptureBitmap(source, dim: true))
+        using (var preview = new System.Drawing.Bitmap(100, 80, System.Drawing.Imaging.PixelFormat.Format32bppRgb))
+        {
+            using (var graphics = System.Drawing.Graphics.FromImage(preview))
+            {
+                var dc = graphics.GetHdc();
+                try { dimmedPreview.CopyTo(dc, new(0, 0, 100, 80)); originalPreview.CopyTo(dc, new(10, 10, 50, 40)); }
+                finally { graphics.ReleaseHdc(dc); }
+            }
+            var selectedPixel = preview.GetPixel(25, 25); var dimmedPixel = preview.GetPixel(5, 5);
+            Check(selectedPixel.R == 220 && selectedPixel.G == 150 && selectedPixel.B == 70, "Cached native preview keeps selected pixels at their original color");
+            Check(dimmedPixel.R < 220 && dimmedPixel.G < 150 && dimmedPixel.B < 70, "Cached native preview dims unselected pixels once");
+            Check(Pixel(source, 5, 5) == (70, 150, 220, 255), "Preview dimming never changes the image that will be captured");
+        }
         var document = new ImageDocument(source);
         Check(document.Image.PixelWidth == 100 && document.Image.DpiX == 96, "Normalize print DPI without losing image pixels");
         Check(!document.CanUndo && !document.CanRedo && !document.IsDirty, "New document starts with clean undo state");
