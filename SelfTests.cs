@@ -37,6 +37,7 @@ public static class SelfTests
         var document = new ImageDocument(source);
         Check(document.Image.PixelWidth == 100 && document.Image.DpiX == 96, "Normalize print DPI without losing image pixels");
         Check(!document.CanUndo && !document.CanRedo && !document.IsDirty, "New document starts with clean undo state");
+        Check(ReferenceEquals(document.Render(), document.Image), "Unedited export reuses image pixels without allocating a full-size render target");
         var box = new Annotation { Tool = DrawTool.Redact, Points = [new(10, 10), new(60, 50)] };
         document.Add(box);
         Check(document.IsDirty && document.CanUndo && document.Annotations.Count == 1, "Annotation creates one undo transaction");
@@ -73,8 +74,26 @@ public static class SelfTests
         var history = new HistoryStore();
         for (int i = 0; i < 12; i++) history.Add(source, 10);
         Check(history.Entries.Count == 10, "History prunes oldest captures to retention limit");
+        var unchanged = history.Entries[1]; var collection = history.Entries;
         var entry = history.Entries[0]; history.Update(entry.Path, document.Render());
         Check(history.Entries.Count == 10 && history.Entries[0].Path == entry.Path, "Editing history updates capture in place");
+        Check(ReferenceEquals(history.Entries[1], unchanged) && ReferenceEquals(history.Entries, collection), "Autosave reuses unchanged previews and the bound history collection");
+        Check(!ReferenceEquals(history.Entries[0].Thumbnail, entry.Thumbnail), "Autosave refreshes the edited preview even when file dimensions do not change");
+        history.Suspend();
+        Check(history.Entries.Count == 0 && history.IsSuspended && File.Exists(entry.Path), "Tray idle releases thumbnail references without deleting captures");
+        history.Update(entry.Path, source);
+        Check(history.Entries.Count == 0 && history.IsSuspended, "Saving while suspended does not reload the hidden sidebar");
+        history.Resume();
+        Check(history.Entries.Count == 10 && !history.IsSuspended && history.Entries[0].Path == entry.Path, "Opening the editor restores recent captures after idle cleanup");
+        var backgroundHistory = new HistoryStore(load: false);
+        Check(backgroundHistory.Entries.Count == 0 && backgroundHistory.IsSuspended, "Background startup skips decoding capture history");
+        string narrowPath = Path.Combine(directory, "narrow.png");
+        var narrow = BitmapSource.Create(20, 3600, 96, 96, PixelFormats.Bgra32, null, new byte[20 * 3600 * 4], 80);
+        ImageFiles.Save(narrow, narrowPath);
+        var narrowThumb = ImageFiles.LoadThumbnail(narrowPath, 200, 140, out int narrowWidth, out int narrowHeight);
+        Check(narrowWidth == 20 && narrowHeight == 3600 && narrowThumb.PixelWidth <= 200 && narrowThumb.PixelHeight <= 140, "Tall narrow captures produce bounded thumbnails and preserve original dimensions");
+        var smallThumb = ImageFiles.LoadThumbnail(entry.Path, 200, 140, out _, out _);
+        Check(smallThumb.PixelWidth == source.PixelWidth && smallThumb.PixelHeight == source.PixelHeight, "Small captures are never enlarged for history thumbnails");
         bool rejected = false; try { history.Update(Path.Combine(directory, "outside.png"), source); } catch (ArgumentException) { rejected = true; }
         Check(rejected, "History cannot overwrite paths outside its owned directory");
         foreach (string extension in new[] { "png", "jpg", "bmp" })
@@ -95,6 +114,7 @@ public static class SelfTests
         File.WriteAllText(Path.Combine(directory, "settings.json"), "{broken");
         Check(AppSettings.Load().HotkeyKey == 0x53, "Corrupt settings recover with safe defaults");
         new AppSettings().Save();
+        MainWindow.CheckIdleCleanup(Check);
         var skipped = new List<string>();
         IReadOnlyList<DisplayInfo> realDisplays = Array.Empty<DisplayInfo>();
         if (includeDesktop)

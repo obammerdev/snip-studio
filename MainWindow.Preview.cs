@@ -9,6 +9,37 @@ namespace SnipStudio;
 
 public partial class MainWindow
 {
+    internal void ShowTrayMenuPreview()
+    {
+        var point = PointToScreen(new Point(ActualWidth - 345, 90));
+        _trayMenu?.Show(new System.Drawing.Point((int)point.X, (int)point.Y));
+    }
+    internal static void CheckIdleCleanup(System.Action<bool, string> check)
+    {
+        var window = new MainWindow(false, integrateWithDesktop: false);
+        try
+        {
+            window.LoadDemo();
+            var document = window._document!;
+            document.Add(new Annotation { Tool = DrawTool.Ellipse, Points = [new(20, 20), new(80, 80)] });
+            var revision = document.Revision;
+            window.ReleaseIdlePreviews();
+            check(window._history.IsSuspended && ReferenceEquals(window.Editor.Document, document) && document.Revision == revision,
+                "Editor idle cleanup releases previews while preserving the active editable document");
+            document.Undo();
+            check(document.Annotations.Count == 0 && document.CanRedo, "Undo remains available after tray idle cleanup");
+            document.Redo();
+            check(document.Annotations.Count == 1 && document.Revision == revision, "Redo restores annotations after tray idle cleanup");
+            window._history.Resume(); window.RefreshHistory();
+            check(!window._history.IsSuspended && window._history.Entries.Count > 0, "Editor sidebar reloads after tray idle cleanup");
+        }
+        finally
+        {
+            window._exiting = true; window._historyTimer.Stop(); window._statusTimer.Stop(); window._trayIdleTimer.Stop();
+            if (window._document != null) window._document.Changed -= window.DocumentChanged;
+            window.Editor.Document = null; window.Close();
+        }
+    }
     internal void ExportPreview(string path)
     {
         LoadDemo();

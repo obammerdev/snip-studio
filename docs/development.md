@@ -67,6 +67,21 @@ temporary storage. It never captures the desktop or loads the user's images.
 Icon artwork can be regenerated with the Python scripts in `scripts/` (Pillow
 required); the generated assets are already committed for ordinary builds.
 
+## Memory and tray diagnostics
+
+For a repeatable history-memory comparison, use a fresh, empty data directory:
+
+```powershell
+.\bin\Release\net10.0-windows\SnipStudio.exe --memory-probe --data-dir "$PWD\artifacts\memory-probe-new"
+.\bin\Release\net10.0-windows\SnipStudio.exe --render-tray-preview "$PWD\artifacts\tray-menu.png"
+```
+
+The memory probe uses generated images and writes `memory-probe.json`. Its forced
+collections isolate measurement stages; ordinary tray cleanup performs a single
+nonblocking collection after image work settles, without a periodic timer loop.
+To inspect the actual tray popup in an isolated demo, add `--show-tray-menu` to
+the `--demo --data-dir ...` command.
+
 ## Publishing a release
 
 1. Update the project version and changelog.

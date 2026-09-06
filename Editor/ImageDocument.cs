@@ -35,6 +35,7 @@ public sealed class ImageDocument
     public void Remove(int index) { if (index >= 0 && index < Annotations.Count) Commit(() => Annotations.RemoveAt(index)); }
     public BitmapSource Render()
     {
+        if (Annotations.Count == 0) return Image;
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {

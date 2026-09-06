@@ -24,13 +24,16 @@ namespace SnipStudio;
 public partial class MainWindow : Window
 {
     private AppSettings _settings = AppSettings.Load();
-    private readonly HistoryStore _history = new();
+    private readonly HistoryStore _history;
     private readonly Dictionary<DrawTool, Button> _toolButtons = [];
     private readonly List<PinWindow> _pins = [];
     private readonly DispatcherTimer _historyTimer = new() { Interval = TimeSpan.FromMilliseconds(700) };
     private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(7) };
+    private readonly DispatcherTimer _trayIdleTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private bool _imageWorkSinceIdle;
     private HotkeyService? _hotkey;
     private Forms.NotifyIcon? _tray;
+    private TrayMenu? _trayMenu;
     private ImageDocument? _document;
     private string? _historyPath;
     private Guid _historyRevision;
@@ -43,6 +46,7 @@ public partial class MainWindow : Window
 
     public MainWindow(bool background, bool integrateWithDesktop = true)
     {
+        _history = new HistoryStore(load: !background);
         InitializeComponent();
         Width = Math.Min(Width, SystemParameters.WorkArea.Width - 40); Height = Math.Min(Height, SystemParameters.WorkArea.Height - 40);
         BuildTools(); BuildPalette();
@@ -62,6 +66,9 @@ public partial class MainWindow : Window
         Editor.PointerMoved += point => { if (_document != null) CanvasInfo.Text = $"{_document.Image.PixelWidth:N0} × {_document.Image.PixelHeight:N0} px   ·   {(int)point.X}, {(int)point.Y}"; };
         _historyTimer.Tick += (_, _) => { _historyTimer.Stop(); FlushHistory(); };
         _statusTimer.Tick += (_, _) => { _statusTimer.Stop(); SetReadyStatus(); };
+        _trayIdleTimer.Tick += (_, _) => ReleaseIdlePreviews();
+        IsVisibleChanged += (_, _) => UpdateBackgroundState();
+        StateChanged += (_, _) => UpdateBackgroundState();
         Loaded += (_, _) => { FitImage(); if (App.StartupNotice != null) SetStatus(App.StartupNotice, true); };
         _ready = true;
         if (!integrateWithDesktop)
@@ -150,16 +157,33 @@ public partial class MainWindow : Window
     private void CreateTray()
     {
         using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/SnipStudio.ico"))!.Stream;
-        var menu = new Forms.ContextMenuStrip { Renderer = new DarkTrayRenderer(), BackColor = System.Drawing.Color.FromArgb(25, 31, 41), ForeColor = System.Drawing.Color.FromArgb(232, 237, 245), ShowImageMargin = false };
-        menu.Items.Add("New region snip (instant)", null, (_, _) => Dispatcher.Invoke(() => _ = StartCaptureAsync(true)));
-        menu.Items.Add("Open Snip Studio", null, (_, _) => Dispatcher.Invoke(Reveal));
-        menu.Items.Add("Settings…", null, (_, _) => Dispatcher.Invoke(() => { Reveal(); ShowSettings(); }));
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("Quit Snip Studio", null, (_, _) => Dispatcher.Invoke(Quit));
-        _tray = new Forms.NotifyIcon { Icon = new System.Drawing.Icon(stream), Text = "Snip Studio", Visible = true, ContextMenuStrip = menu };
+        _trayMenu = new TrayMenu(
+            () => Dispatcher.Invoke(() => _ = StartCaptureAsync(true)), () => Dispatcher.Invoke(Reveal),
+            () => Dispatcher.Invoke(() => { Reveal(); ShowSettings(); }), () => Dispatcher.Invoke(Quit),
+            () => HotkeyService.Display(_settings.HotkeyModifiers, _settings.HotkeyKey), () => !_captureBusy && _dialogDepth == 0);
+        _tray = new Forms.NotifyIcon { Icon = new System.Drawing.Icon(stream), Text = "Snip Studio", Visible = true, ContextMenuStrip = _trayMenu };
         _tray.DoubleClick += (_, _) => Dispatcher.Invoke(Reveal);
     }
-    public void Reveal() { Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }
+    public void Reveal() { _trayIdleTimer.Stop(); _history.Resume(); RefreshHistory(); Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }
+    private void UpdateBackgroundState()
+    {
+        _trayIdleTimer.Stop();
+        if (_exiting) return;
+        if (IsVisible && WindowState != WindowState.Minimized) { _history.Resume(); RefreshHistory(); }
+        else _trayIdleTimer.Start();
+    }
+    private void ReleaseIdlePreviews()
+    {
+        _trayIdleTimer.Stop();
+        if (_exiting || (IsVisible && WindowState != WindowState.Minimized) || _captureBusy || _dialogDepth > 0) return;
+        FlushHistory();
+        bool released = _history.Entries.Count > 0;
+        HistoryList.ItemsSource = null; _history.Suspend();
+        // One collection after image work settles; preserve the document and all undo states.
+        // No periodic collections or working-set trimming while the app is idle.
+        if (released || _imageWorkSinceIdle) GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: false);
+        _imageWorkSinceIdle = false;
+    }
     private async Task StartCaptureAsync(bool instant)
     {
         if (_dialogDepth > 0) return;
@@ -181,6 +205,7 @@ public partial class MainWindow : Window
             if (delay > 0) await new CountdownWindow(() => _captureCancel?.Cancel()).CountAsync(delay, token);
             await Task.Delay(180, token); // Let DWM remove our windows before reading pixels.
             token.ThrowIfCancellationRequested();
+            _imageWorkSinceIdle = true;
             var frame = NativeDesktop.Capture(_settings.IncludeCursor);
             BitmapSource? result;
             string mode = instant ? "Region" : _settings.CaptureMode;
@@ -194,7 +219,7 @@ public partial class MainWindow : Window
                 LoadImage(result, $"Snip · {DateTime.Now:h:mm tt}"); captured = true; Reveal();
                 if (_settings.CopyAfterCapture)
                 {
-                    try { await ImageFiles.CopyAsync(result); SetStatus("Captured and copied. Add your finishing touches, then copy again."); }
+                    try { await ImageFiles.CopyAsync(_document!.Image); SetStatus("Captured and copied. Add your finishing touches, then copy again."); }
                     catch (Exception ex) { SetStatus("Captured. Clipboard was busy: " + ex.Message, true); }
                 }
                 else SetStatus("Captured. Make it yours.");
@@ -208,11 +233,13 @@ public partial class MainWindow : Window
             _overlay = null; _captureCancel.Dispose(); _captureCancel = null; _captureBusy = false; NewButton.IsEnabled = true;
             foreach (var pin in visiblePins) if (_pins.Contains(pin)) pin.Show();
             if (!captured && wasVisible) Reveal();
+            if (!IsVisible || WindowState == WindowState.Minimized) UpdateBackgroundState();
             if (_instantRequested) { _instantRequested = false; await StartCaptureAsync(true); }
         }
     }
     private void LoadImage(BitmapSource bitmap, string title, string? historyPath = null, string? exportPath = null)
     {
+        _imageWorkSinceIdle = true;
         _historyTimer.Stop();
         if (_document != null) _document.Changed -= DocumentChanged;
         _document = new ImageDocument(bitmap); _document.Changed += DocumentChanged;
@@ -224,6 +251,7 @@ public partial class MainWindow : Window
     public void LoadDemo() => LoadImage(DemoFactory.Create(), "A little weekend inspiration");
     private void DocumentChanged()
     {
+        _imageWorkSinceIdle = true;
         UpdateActions(); _historyTimer.Stop(); if (_settings.KeepHistory) _historyTimer.Start();
         if (_fit) Dispatcher.BeginInvoke(FitImage);
     }
@@ -287,7 +315,7 @@ public partial class MainWindow : Window
     {
         if (_document == null) return;
         Editor.CancelInteraction();
-        try { await ImageFiles.CopyAsync(_document.Render()); FlushHistory(); SetStatus("Image copied. Ready to paste anywhere."); }
+        try { _imageWorkSinceIdle = true; await ImageFiles.CopyAsync(_document.Render()); FlushHistory(); SetStatus("Image copied. Ready to paste anywhere."); }
         catch (Exception ex) { SetStatus("Couldn't copy: " + ex.Message, true); }
     }
     private void OpenImage()
@@ -502,8 +530,8 @@ public partial class MainWindow : Window
     private void Quit()
     {
         if (_captureBusy || _dialogDepth > 0 || !CanLeaveDocument()) return;
-        _exiting = true; _historyTimer.Stop(); _statusTimer.Stop(); SaveSettingsQuietly();
+        _exiting = true; _historyTimer.Stop(); _statusTimer.Stop(); _trayIdleTimer.Stop(); SaveSettingsQuietly();
         foreach (var pin in _pins.ToArray()) pin.Close();
-        _hotkey?.Dispose(); _tray?.Dispose(); Application.Current.Shutdown();
+        _hotkey?.Dispose(); _tray?.Icon?.Dispose(); _tray?.Dispose(); _trayMenu?.Dispose(); Application.Current.Shutdown();
     }
 }

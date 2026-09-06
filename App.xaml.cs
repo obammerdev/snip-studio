@@ -22,6 +22,13 @@ public partial class App : Application
         if (index >= 0 && index + 1 < e.Args.Length) DataDirectory = Path.GetFullPath(e.Args[index + 1]);
         IsTestMode = e.Args.Contains("--self-test") || e.Args.Contains("--demo");
         Directory.CreateDirectory(DataDirectory);
+        if (e.Args.Contains("--memory-probe"))
+        {
+            if (index < 0) { Shutdown(2); return; }
+            try { Diagnostics.MemoryProbe.Run(DataDirectory); Shutdown(0); }
+            catch (Exception ex) { File.WriteAllText(Path.Combine(DataDirectory, "memory-probe-failed.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
         if (e.Args.Contains("--self-test"))
         {
             try { SelfTests.Run(DataDirectory, !e.Args.Contains("--headless")); Shutdown(0); }
@@ -29,6 +36,12 @@ public partial class App : Application
             return;
         }
         var previewIndex = Array.IndexOf(e.Args, "--render-preview");
+        var trayPreviewIndex = Array.IndexOf(e.Args, "--render-tray-preview");
+        if (trayPreviewIndex >= 0 && trayPreviewIndex + 1 < e.Args.Length)
+        {
+            Diagnostics.TrayMenuPreview.Render(Path.GetFullPath(e.Args[trayPreviewIndex + 1]));
+            Shutdown(0); return;
+        }
         if (previewIndex >= 0 && previewIndex + 1 < e.Args.Length)
         {
             // Documentation previews use generated content and isolated storage only.
@@ -53,7 +66,11 @@ public partial class App : Application
         MainWindow = window;
         _wait = ThreadPool.RegisterWaitForSingleObject(_activation, (_, _) => Dispatcher.BeginInvoke(window.Reveal), null, Timeout.Infinite, false);
         if (!e.Args.Contains("--background")) window.Show();
-        if (e.Args.Contains("--demo")) window.LoadDemo();
+        if (e.Args.Contains("--demo"))
+        {
+            window.LoadDemo();
+            if (e.Args.Contains("--show-tray-menu")) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, window.ShowTrayMenuPreview);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

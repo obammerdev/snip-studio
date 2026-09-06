@@ -56,6 +56,12 @@ Automatic clipboard copying after capture is on initially. After editing, use Co
 
 ## Local history and settings
 
+History previews are bounded in width and height and reused between edits. When
+the editor is hidden or minimized for three seconds, its previews are released
+and rebuilt when needed. The current image and undo/redo remain in memory, so
+large captures, pinned images, and crop history can still increase memory use.
+Background startup waits to load previews until the editor opens.
+
 Settings live in `%LOCALAPPDATA%\SnipStudio\settings.json`; recent captures live in its `Captures` folder. History defaults to the latest 30 captures; choose 10, 30, or 100. Edits are saved to the current history image after a short idle interval and when switching images or closing the editor. History is stored as flattened PNGs: reopening a capture starts a fresh undo session. No image metadata or original hidden layers are included in exported files.
 
 Solid redaction is included as opaque pixels in saved/copied images. Undo can restore the original while that editing session is open. Pixelation is a visual effect; use solid redaction for sensitive information.

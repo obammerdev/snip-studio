@@ -46,7 +46,11 @@ The global shortcut **always skips the countdown**, including one already in pro
 
 ## Ready in the tray
 
+![Dark tray menu with a subtle selected row and the capture shortcut](docs/images/tray-menu.png)
+
 Enable **Launch when I sign in to Windows** during setup or in Settings. Snip Studio starts quietly in the tray, ready for your shortcut. Closing the editor keeps capture available; **Ctrl + Q** quits completely. Double-click the tray icon to return to the editor.
+
+While hidden or minimized, the app releases recent-capture previews after a short idle period. Your open image and undo/redo stay available when you return.
 
 To update, quit the app and run the new installer. Startup preferences, captures, and settings are preserved. Uninstall from Windows **Installed apps**; your saved images and settings remain in `%LOCALAPPDATA%\SnipStudio`.
 

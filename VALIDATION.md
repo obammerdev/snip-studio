@@ -1,5 +1,24 @@
 # Release verification
 
+## Version 1.2.1
+
+- 65 app checks passed, including preview bounds, cache reuse, suspended history,
+  background startup, and preservation of the active document and undo/redo.
+- The packaged executable passed all 65 checks on the three-monitor desktop.
+- 23 installer lifecycle checks passed. The installed executable also passed
+  60 headless app checks using its bundled runtime.
+- The native tray popup was reviewed at 125% Windows scaling, including all four
+  actions, the configured shortcut hint, and Windows 11 rounded corners. The
+  selected-row renderer was also checked in the generated tray preview.
+- A controlled history workload used 29 generated 1080×660 images and one narrow
+  20×3600 image, followed by eight saves. Process working set after the saves was
+  166 MiB before the fix and 77 MiB after. Total thumbnail pixels fell from
+  7,907,600 to 707,740; the eight saves took 598 ms before and 108 ms after.
+
+These measurements describe that synthetic history workload, not a guaranteed
+memory footprint for every capture. The active document, crop undo states,
+pinned images, WPF, and Windows rendering still require memory.
+
 ## Version 1.2.0
 
 Verified on Windows on September 6, 2026.
