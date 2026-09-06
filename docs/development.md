@@ -58,6 +58,10 @@ installed Snip Studio product or its capture history.
 
 ## Documentation preview
 
+The renderer also writes `.compact.png` and `.preferences.png` siblings for
+reviewing the editor and preferences at smaller sizes. Preview history uses
+generated crops only; no desktop pixels or personal captures enter these images.
+
 ```powershell
 .\bin\Release\net10.0-windows\SnipStudio.exe --render-preview "$PWD\docs\images\editor.png"
 ```

@@ -292,6 +292,7 @@ public partial class MainWindow : Window
     private void RefreshHistory()
     {
         HistoryList.ItemsSource = _history.Entries;
+        ClearHistoryButton.IsEnabled = _history.Entries.Count > 0;
         HistoryEmpty.Visibility = _history.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         HistoryDescription.Text = _settings.KeepHistory ? $"On this device · last {_settings.HistoryLimit} captures" : "Saving is paused in Settings";
     }

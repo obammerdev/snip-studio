@@ -44,6 +44,8 @@ Releases are currently unsigned, so Windows may show an unknown-publisher or Sma
 
 The global shortcut **always skips the countdown**, including one already in progress. Set your preferred shortcut in **Settings**; unavailable combinations are detected before replacing the current one.
 
+The dark workspace includes slim scrollbars, clear keyboard focus, and a recent-capture sidebar with comfortable spacing. Smaller windows keep tools and preferences accessible through scrolling.
+
 ## Ready in the tray
 
 ![Dark tray menu with a subtle selected row and the capture shortcut](docs/images/tray-menu.png)

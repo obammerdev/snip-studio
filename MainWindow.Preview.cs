@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using SnipStudio.Editor;
@@ -9,6 +10,32 @@ namespace SnipStudio;
 
 public partial class MainWindow
 {
+    internal static void CheckScrollControls(System.Action<bool, string> check)
+    {
+        static void Layout(FrameworkElement element)
+        {
+            element.Measure(new Size(320, 220)); element.Arrange(new Rect(0, 0, 320, 220)); element.UpdateLayout();
+        }
+        var scroll = new ScrollViewer { Style = (Style)Application.Current.FindResource("DarkScrollViewer"), Content = new Border { Width = 900, Height = 800 }, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Layout(scroll);
+        var vertical = (ScrollBar)scroll.Template.FindName("PART_VerticalScrollBar", scroll);
+        var horizontal = (ScrollBar)scroll.Template.FindName("PART_HorizontalScrollBar", scroll);
+        check(vertical.IsVisible == horizontal.IsVisible && vertical.ActualWidth == 14 && horizontal.ActualHeight == 14 && horizontal.ActualWidth > 250,
+            $"Themed scrollbars reserve usable vertical and horizontal drag targets ({vertical.ActualWidth} × {horizontal.ActualHeight}; horizontal length {horizontal.ActualWidth})");
+        scroll.ScrollToVerticalOffset(180); scroll.ScrollToHorizontalOffset(240); scroll.UpdateLayout();
+        check(scroll.VerticalOffset == 180 && scroll.HorizontalOffset == 240 && vertical.Value == 180 && horizontal.Value == 240,
+            "Themed scrollbar positions follow both content offsets");
+        scroll.ScrollToBottom(); scroll.ScrollToRightEnd(); scroll.UpdateLayout();
+        check(scroll.VerticalOffset == scroll.ScrollableHeight && scroll.HorizontalOffset == scroll.ScrollableWidth,
+            "Themed content can scroll to the last row and right edge");
+        scroll.Content = new Border { Width = 40, Height = 40 }; Layout(scroll);
+        check(scroll.ComputedVerticalScrollBarVisibility == Visibility.Collapsed && scroll.ComputedHorizontalScrollBarVisibility == Visibility.Collapsed,
+            "Scrollbars disappear when the content fits");
+        var text = new TextBox { Style = (Style)Application.Current.FindResource(typeof(TextBox)), Text = string.Join("\n", System.Linq.Enumerable.Repeat("A multiline annotation", 40)), AcceptsReturn = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Layout(text); text.ScrollToEnd(); text.UpdateLayout();
+        check(text.VerticalOffset > 0 && text.ExtentHeight > text.ViewportHeight,
+            "Themed text input still scrolls to the end of multiline annotations");
+    }
     internal void ShowTrayMenuPreview()
     {
         var point = PointToScreen(new Point(ActualWidth - 345, 90));
@@ -42,6 +69,10 @@ public partial class MainWindow
     }
     internal void ExportPreview(string path)
     {
+        var sample = DemoFactory.Create();
+        // Enough generated captures to show the sidebar's real scrolling state.
+        foreach (int x in new[] { 48, 388, 728 })
+            _history.Add(new CroppedBitmap(sample, new Int32Rect(x, 287, 304, 305)), 30);
         LoadDemo();
         _document!.Add(new Annotation { Tool = DrawTool.Ellipse, Width = 5, Points = [new(704, 287), new(1044, 592)] });
         _document.Add(new Annotation { Tool = DrawTool.Arrow, Width = 5, Points = [new(620, 268), new(766, 359)] });
@@ -57,11 +88,24 @@ public partial class MainWindow
         content.Measure(new Size(1320, 820));
         content.Arrange(new Rect(0, 0, 1320, 820));
         content.UpdateLayout(); FitImage(); content.UpdateLayout();
-        var bitmap = new RenderTargetBitmap(1980, 1230, 144, 144, PixelFormats.Pbgra32);
-        bitmap.Render(content);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        SavePreview(content, path, 1320, 820);
+        content.Width = 1040; content.Height = 610;
+        content.Measure(new Size(1040, 610)); content.Arrange(new Rect(0, 0, 1040, 610)); content.UpdateLayout(); FitImage(); content.UpdateLayout();
+        SavePreview(content, Path.ChangeExtension(path, ".compact.png"), 1040, 610);
+        using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Preview messages") { ParentWindow = new System.IntPtr(-3) });
+        using var hotkey = new Services.HotkeyService(source.Handle);
+        var settings = new SettingsWindow(_settings, hotkey);
+        var preferences = (Panel)settings.Content; preferences.Background = settings.Background;
+        preferences.Width = 520; preferences.Height = 520;
+        preferences.Measure(new Size(520, 520)); preferences.Arrange(new Rect(0, 0, 520, 520)); preferences.UpdateLayout();
+        SavePreview(preferences, Path.ChangeExtension(path, ".preferences.png"), 520, 520); settings.Close();
+        _historyTimer.Stop(); _statusTimer.Stop(); _imageIdleTimer.Stop();
+    }
+    private static void SavePreview(FrameworkElement content, string path, int width, int height)
+    {
+        var bitmap = new RenderTargetBitmap(width * 3 / 2, height * 3 / 2, 144, 144, PixelFormats.Pbgra32);
+        bitmap.Render(content); Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var stream = File.Create(path);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); encoder.Save(stream);
-        _historyTimer.Stop(); _statusTimer.Stop();
     }
 }

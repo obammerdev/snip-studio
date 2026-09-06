@@ -22,15 +22,18 @@ public sealed class SettingsWindow : Window
     public SettingsWindow(AppSettings settings, HotkeyService hotkey)
     {
         WindowTheme.Initialize(this);
+        var errorStyle = new Style(typeof(TextBlock));
+        var noError = new Trigger { Property = TextBlock.TextProperty, Value = "" };
+        noError.Setters.Add(new Setter(VisibilityProperty, Visibility.Collapsed)); errorStyle.Triggers.Add(noError); _error.Style = errorStyle;
         _original = settings; _hotkey = hotkey; _modifiers = settings.HotkeyModifiers; _key = settings.HotkeyKey;
-        Title = "Settings · Snip Studio"; Width = 600; Height = 775; MinHeight = 550; ResizeMode = ResizeMode.CanResize; WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Title = "Settings · Snip Studio"; Width = 600; Height = 775; MinWidth = 520; MinHeight = 550; ResizeMode = ResizeMode.CanResize; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         MaxHeight = SystemParameters.WorkArea.Height - 35;
         var root = new Grid(); root.RowDefinitions.Add(new() { Height = GridLength.Auto }); root.RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) }); root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         var heading = new StackPanel { Margin = new Thickness(28, 25, 28, 18) };
         heading.Children.Add(new TextBlock { Text = "Preferences", FontSize = 25, FontWeight = FontWeights.SemiBold });
         heading.Children.Add(new TextBlock { Text = "Shortcuts, capture behavior, and your workspace.", Margin = new Thickness(0, 7, 0, 0), Foreground = (Brush)Application.Current.FindResource("Muted") }); root.Children.Add(heading);
         var body = new StackPanel { Margin = new Thickness(28, 0, 28, 24) };
-        var scroll = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetRow(scroll, 1); root.Children.Add(scroll);
+        var scroll = new ScrollViewer { Style = (Style)Application.Current.FindResource("DarkScrollViewer"), Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 0, 10, 0) }; Grid.SetRow(scroll, 1); root.Children.Add(scroll);
         Section(body, "CAPTURE SHORTCUT");
         body.Children.Add(Note("Click the field, then press your preferred combination."));
         _recorder.Text = HotkeyService.Display(_modifiers, _key); _recorder.Margin = new Thickness(0, 9, 0, 0); _recorder.ToolTip = "Press Ctrl with Alt or Shift, plus a letter, number, or F1–F11.";
@@ -68,7 +71,11 @@ public sealed class SettingsWindow : Window
         var save = new Button { Content = "Save preferences", Style = (Style)Application.Current.FindResource("PrimaryButton"), MinWidth = 150 }; save.Click += Save;
         buttons.Children.Add(save); footer.Child = buttons; Grid.SetRow(footer, 2); root.Children.Add(footer); Content = root;
     }
-    private static void Configure(CheckBox box, string text, bool value) { box.Content = text; box.IsChecked = value; }
+    private static void Configure(CheckBox box, string text, bool value)
+    {
+        box.Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }; box.IsChecked = value;
+        System.Windows.Automation.AutomationProperties.SetName(box, text);
+    }
     private static void Section(Panel panel, string text) => panel.Children.Add(new TextBlock { Text = text, FontSize = 10, Foreground = WindowTheme.Brush("Accent"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 5, 0, 7) });
     private static TextBlock Note(string text, double top = 2) => new() { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 12, LineHeight = 19, Foreground = WindowTheme.Brush("Muted"), Margin = new Thickness(0, top, 0, 0) };
     private void RecordShortcut(object sender, KeyEventArgs e)
@@ -132,7 +139,7 @@ public sealed class ShortcutsWindow : Window
     public ShortcutsWindow(string globalShortcut)
     {
         WindowTheme.Initialize(this);
-        Title = "Keyboard shortcuts · Snip Studio"; Width = 650; Height = 675; MaxHeight = SystemParameters.WorkArea.Height - 35; WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Title = "Keyboard shortcuts · Snip Studio"; Width = 650; Height = 675; MinWidth = 600; MinHeight = 400; MaxHeight = SystemParameters.WorkArea.Height - 35; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var panel = new StackPanel { Margin = new Thickness(28) };
         panel.Children.Add(new TextBlock { Text = "Keyboard shortcuts", FontSize = 25, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 9) });
         panel.Children.Add(new TextBlock { Text = "Your shortcut reference", Foreground = (Brush)Application.Current.FindResource("Muted"), Margin = new Thickness(0, 0, 0, 22) });
@@ -151,10 +158,10 @@ public sealed class ShortcutsWindow : Window
         foreach (var row in rows)
         {
             var grid = new Grid { Margin = new Thickness(0, 6, 0, 6) }; grid.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) }); grid.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-            grid.Children.Add(new TextBlock { Text = row.Action, FontSize = 12 });
+            grid.Children.Add(new TextBlock { Text = row.Action, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 16, 0) });
             var keys = new TextBlock { Text = row.Keys, FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = (Brush)Application.Current.FindResource("Accent") }; Grid.SetColumn(keys, 1); grid.Children.Add(keys); panel.Children.Add(grid);
         }
         var close = new Button { Content = "Got it", IsCancel = true, Margin = new Thickness(0, 20, 0, 0), HorizontalAlignment = HorizontalAlignment.Right, Style = (Style)Application.Current.FindResource("PrimaryButton"), MinWidth = 100 }; panel.Children.Add(close);
-        Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Content = new ScrollViewer { Style = (Style)Application.Current.FindResource("DarkScrollViewer"), Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }
 }

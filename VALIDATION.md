@@ -1,5 +1,15 @@
 # Release verification
 
+## Version 1.2.4
+
+- 81 app checks passed, including scrollbar sizing, synchronization on both axes,
+  scrolling to content edges, automatic visibility, and multiline text input.
+- 23 installer lifecycle checks passed. The installed binary passed 76 headless
+  app checks with its bundled runtime, covering the new scrolling behavior too.
+- Normal and compact editor layouts and compact preferences were rendered from
+  the actual WPF controls and visually reviewed using generated sample captures.
+- Native capture behavior and the memory optimizations from 1.2.3 are unchanged.
+
 ## Version 1.2.3
 
 - 76 app checks passed, including native preview color preservation, dimming,

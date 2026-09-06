@@ -23,6 +23,7 @@ public static class SelfTests
         }
         var passed = new List<string>();
         void Check(bool condition, string name) { if (!condition) throw new InvalidOperationException("FAIL: " + name); passed.Add(name); }
+        MainWindow.CheckScrollControls(Check);
         var displays = new[] { new DisplayInfo(new(-1920, 0, 1920, 1080), false, "Left"), new DisplayInfo(new(0, 0, 2560, 1440), true, "Primary"), new DisplayInfo(new(0, -2160, 3840, 2160), false, "Above") };
         Check(NativeDesktop.Union(displays) == new PixelRect(-1920, -2160, 5760, 3600), "Virtual desktop union includes negative monitor origins");
         Check(PixelRect.Between(100, 200, -300, -400) == new PixelRect(-300, -400, 400, 600), "Region supports reverse drags across display boundaries");

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.4 — 2026-09-06
+
+- Added consistent slim, rounded dark scrollbars to history, the canvas, dialogs,
+  and menus, with full-size drag targets and subdued hover feedback.
+- Fixed native minimum sizes overriding scrollbar styling and horizontal sizing.
+- Refined recent-capture cards, spacing, tooltips, and keyboard focus indicators.
+- Kept the tool rail comfortable at smaller window sizes, and improved settings
+  and shortcut layouts with wrapping labels and sensible minimum widths.
+- Added scrolling and multiline-input checks, plus compact documentation previews.
+
 ## 1.2.3 — 2026-09-06
 
 - Replaced the capture selection renderer with a cached native preview. Dimming
