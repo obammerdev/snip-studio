@@ -1,0 +1,28 @@
+name: Bug report
+description: Something isn't working as expected.
+title: "[Bug]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App and Windows version
+      placeholder: Snip Studio 1.2.0, Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, expected behavior, and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: displays
+    attributes:
+      label: Monitor setup
+      description: For capture issues, include monitor positions, resolutions, and scaling.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Optional screenshots or relevant errors. Remove private information first.

@@ -1,0 +1,15 @@
+.tools/
+bin/
+obj/
+artifacts/
+app/
+release/
+*.log
+*.pfx
+*.p12
+.env
+.env.*
+SnipStudio-win-x64.zip
+.vs/
+*.user
+*.suo

@@ -1,0 +1,42 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Build, test, and package
+        shell: pwsh
+        run: ./build.ps1 -Installer -HeadlessTests
+      - name: Verify installer lifecycle
+        shell: pwsh
+        run: ./scripts/test-installer.ps1
+      - name: Upload distributables
+        uses: actions/upload-artifact@v7
+        with:
+          name: Snip-Studio-Windows-x64
+          path: release/*
+          if-no-files-found: error
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Test-results
+          path: |
+            artifacts/tests/self-test-*.json
+            artifacts/tests/self-test-failed.txt
+            artifacts/installer-tests/results.json
+          if-no-files-found: ignore

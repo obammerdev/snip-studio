@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\SnipStudio.ico</ApplicationIcon>
+    <AssemblyName>SnipStudio</AssemblyName>
+    <RootNamespace>SnipStudio</RootNamespace>
+    <Version>1.2.0</Version>
+    <Description>A thoughtful, native Windows capture and annotation studio.</Description>
+    <Authors>Snip Studio</Authors>
+    <Deterministic>true</Deterministic>
+    <!-- WPF owns DPI initialization; WinForms is used only for the notification icon. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <DefaultItemExcludes>$(DefaultItemExcludes);.tools\**;artifacts\**;release\**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\SnipStudio.ico" />
+  </ItemGroup>
+</Project>
