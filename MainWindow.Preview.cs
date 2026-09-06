@@ -23,7 +23,7 @@ public partial class MainWindow
             var document = window._document!;
             document.Add(new Annotation { Tool = DrawTool.Ellipse, Points = [new(20, 20), new(80, 80)] });
             var revision = document.Revision;
-            window.ReleaseIdlePreviews();
+            window.ReleaseIdleImageResources();
             check(window._history.IsSuspended && ReferenceEquals(window.Editor.Document, document) && document.Revision == revision,
                 "Editor idle cleanup releases previews while preserving the active editable document");
             document.Undo();
@@ -35,7 +35,7 @@ public partial class MainWindow
         }
         finally
         {
-            window._exiting = true; window._historyTimer.Stop(); window._statusTimer.Stop(); window._trayIdleTimer.Stop();
+            window._exiting = true; window._historyTimer.Stop(); window._statusTimer.Stop(); window._imageIdleTimer.Stop();
             if (window._document != null) window._document.Changed -= window.DocumentChanged;
             window.Editor.Document = null; window.Close();
         }

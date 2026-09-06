@@ -15,7 +15,7 @@ public sealed class SettingsWindow : Window
     private uint _modifiers, _key;
     private readonly TextBox _recorder = new() { IsReadOnly = true, FontWeight = FontWeights.SemiBold, FontSize = 15, Background = WindowTheme.Brush("Control"), Height = 45 };
     private readonly TextBlock _error = new() { Foreground = WindowTheme.Brush("Warning"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), FontSize = 12 };
-    private readonly CheckBox _startup = new(), _tray = new(), _copy = new(), _history = new(), _cursor = new();
+    private readonly CheckBox _startup = new(), _tray = new(), _copy = new(), _history = new(), _cursor = new(), _hardware = new();
     private readonly ComboBox _limit = new() { Width = 140, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 5, 0, 0) };
     public AppSettings? Result { get; private set; }
 
@@ -55,7 +55,12 @@ public sealed class SettingsWindow : Window
         body.Children.Add(_limit);
         body.Children.Add(Note("Recent captures include your latest edits. Reopening a saved capture starts a fresh editing session. Turning this off pauses saving; use Clear in the sidebar to remove existing history.", 12));
         body.Children.Add(new Separator());
-        body.Children.Add(new TextBlock { Text = "Snip Studio 1.1 · Dark", FontWeight = FontWeights.SemiBold, FontSize = 12 });
+        Section(body, "PERFORMANCE");
+        Configure(_hardware, "Use hardware acceleration", settings.HardwareAcceleration); body.Children.Add(_hardware);
+        body.Children.Add(Note("Off uses less memory. Turn on if drawing or zooming very large images feels slow. Quit and reopen the app after changing this setting."));
+        body.Children.Add(new Separator());
+        var version = typeof(App).Assembly.GetName().Version?.ToString(3);
+        body.Children.Add(new TextBlock { Text = $"Snip Studio {version} · Dark", FontWeight = FontWeights.SemiBold, FontSize = 12 });
         body.Children.Add(Note("Native Windows app. No accounts, uploads, or tracking.\nSettings and history: %LOCALAPPDATA%\\SnipStudio", 7));
         var footer = new Border { Background = WindowTheme.Brush("Panel"), BorderBrush = (Brush)Application.Current.FindResource("Line"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(28, 16, 28, 16) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
@@ -88,6 +93,7 @@ public sealed class SettingsWindow : Window
             var result = _original.Clone(); result.HotkeyModifiers = _modifiers; result.HotkeyKey = _key;
             result.CloseToTray = _tray.IsChecked == true; result.CopyAfterCapture = _copy.IsChecked == true; result.KeepHistory = _history.IsChecked == true; result.IncludeCursor = _cursor.IsChecked == true;
             result.HistoryLimit = (int)((ComboBoxItem)_limit.SelectedItem).Tag;
+            result.HardwareAcceleration = _hardware.IsChecked == true;
             if (wasStartup != (_startup.IsChecked == true)) StartupService.SetEnabled(_startup.IsChecked == true);
             result.Save(); Result = result; DialogResult = true;
         }

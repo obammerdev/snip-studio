@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.2 — 2026-09-06
+
+- Defaulted to software rendering to avoid persistent GPU driver buffers in a
+  small 2D editor, especially after captures across several monitors.
+- Added an optional hardware acceleration setting for very large images;
+  changing it takes effect after quitting and reopening the app.
+- Kept bundled runtime assemblies uncompressed so Windows can map them from the
+  executable instead of inflating them into private memory. Downloads remain compressed.
+- Released temporary image buffers after work settles even with the editor open.
+- Added a repeatable real-window capture lifecycle probe and rendering preference tests.
+- Fixed the version shown in Settings to follow the actual app version.
+
 ## 1.2.1 — 2026-09-06
 
 - Rebuilt the tray menu with flat dark rows, subdued hover states, icons, a live

@@ -21,6 +21,7 @@ public sealed class EditorSurface : FrameworkElement
     public double TextSize { get; set; } = 26;
     public double ViewScale { get; set; } = 1;
     public int SelectedIndex => _selected;
+    internal bool IsInteracting => _dragging;
     public DrawTool Tool
     {
         get => _tool;

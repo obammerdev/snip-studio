@@ -22,6 +22,19 @@ public partial class App : Application
         if (index >= 0 && index + 1 < e.Args.Length) DataDirectory = Path.GetFullPath(e.Args[index + 1]);
         IsTestMode = e.Args.Contains("--self-test") || e.Args.Contains("--demo");
         Directory.CreateDirectory(DataDirectory);
+        // A small 2D editor does not need persistent GPU staging buffers for every display.
+        bool hardware = e.Args.Contains("--hardware-rendering") || (!e.Args.Contains("--software-rendering") && Services.AppSettings.Load().HardwareAcceleration);
+        System.Windows.Media.RenderOptions.ProcessRenderMode = hardware ? System.Windows.Interop.RenderMode.Default : System.Windows.Interop.RenderMode.SoftwareOnly;
+        if (e.Args.Contains("--lifecycle-probe"))
+        {
+            if (index < 0 || index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            Dispatcher.BeginInvoke(async () =>
+            {
+                try { await SnipStudio.MainWindow.RunLifecycleProbeAsync(DataDirectory); Shutdown(0); }
+                catch (Exception ex) { File.WriteAllText(Path.Combine(DataDirectory, "lifecycle-probe-failed.txt"), ex.ToString()); Shutdown(1); }
+            });
+            return;
+        }
         if (e.Args.Contains("--memory-probe"))
         {
             if (index < 0) { Shutdown(2); return; }

@@ -103,6 +103,14 @@ public static class SelfTests
         }
         var settings = new AppSettings { DelaySeconds = 5, HotkeyModifiers = 7, HotkeyKey = 0x53 }; settings.Save();
         Check(AppSettings.Load().DelaySeconds == 5, "Settings persist capture countdown");
+        settings.HardwareAcceleration = true; settings.Save();
+        Check(AppSettings.Load().HardwareAcceleration, "Hardware acceleration preference persists across restarts");
+        settings.HardwareAcceleration = false; settings.Save();
+        Check(!AppSettings.Load().HardwareAcceleration, "Lower-memory rendering can be restored");
+        File.WriteAllText(Path.Combine(directory, "settings.json"), "{\"DelaySeconds\":5,\"HotkeyKey\":75}");
+        var renderingUpgrade = AppSettings.Load();
+        Check(!renderingUpgrade.HardwareAcceleration && renderingUpgrade.DelaySeconds == 5 && renderingUpgrade.HotkeyKey == 75,
+            "Existing settings adopt lower-memory rendering without resetting capture preferences");
         new AppSettings { AnnotationColor = "#F16B55", StrokeWidth = 4, PaletteVersion = 0, DelaySeconds = 10, HotkeyKey = 0x4B }.Save();
         var upgraded = AppSettings.Load();
         Check(upgraded.AnnotationColor == AnnotationColors.Default && upgraded.StrokeWidth == 5 && upgraded.DelaySeconds == 10 && upgraded.HotkeyKey == 0x4B, "Palette upgrade strengthens the old default without resetting capture preferences");

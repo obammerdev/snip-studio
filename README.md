@@ -52,6 +52,8 @@ Enable **Launch when I sign in to Windows** during setup or in Settings. Snip St
 
 While hidden or minimized, the app releases recent-capture previews after a short idle period. Your open image and undo/redo stay available when you return.
 
+Software rendering keeps the default memory footprint smaller. For unusually large images, optional hardware acceleration is available in **Settings → Performance**; quit and reopen after changing it.
+
 To update, quit the app and run the new installer. Startup preferences, captures, and settings are preserved. Uninstall from Windows **Installed apps**; your saved images and settings remain in `%LOCALAPPDATA%\SnipStudio`.
 
 ## Local by design

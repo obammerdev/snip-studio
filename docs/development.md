@@ -82,7 +82,30 @@ nonblocking collection after image work settles, without a periodic timer loop.
 To inspect the actual tray popup in an isolated demo, add `--show-tray-menu` to
 the `--demo --data-dir ...` command.
 
+For capture memory, use the published executable on an interactive desktop:
+
+```powershell
+.\artifacts\publish\SnipStudio.exe --lifecycle-probe --data-dir "$PWD\artifacts\lifecycle-new"
+```
+
+Use a fresh data directory each time. The probe displays generated pixels in
+real editor and capture-overlay windows on the connected monitors, then records
+memory through three capture and tray cycles. It checks foreground cleanup and
+undo/redo after hiding. It does not read the desktop or touch the clipboard.
+The output is `lifecycle-probe.json`; private bytes mean committed private memory,
+while working set includes shared pages. Neither is the private working set
+shown in Task Manager's default Memory column.
+
+Use `--hardware-rendering` to compare GPU rendering, or `--software-rendering` to
+override a hardware preference during a diagnostic run. These switches do not
+change saved preferences. The lifecycle probe uses the normal idle cleanup, with
+no extra forced collections or working-set trimming to improve the measurements.
+
 ## Publishing a release
+
+The installed app is a self-contained, uncompressed single-file bundle. Keep
+`EnableCompressionInSingleFile=false`: compressed assemblies inflate into private
+memory at runtime. The installer and portable ZIP compress the download instead.
 
 1. Update the project version and changelog.
 2. Run the complete desktop tests and installer smoke tests locally. Verify the

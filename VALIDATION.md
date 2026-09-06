@@ -1,5 +1,30 @@
 # Release verification
 
+## Version 1.2.2
+
+- 68 app checks and 23 installer lifecycle checks passed. The installed binary
+  passed 63 headless checks using its bundled runtime.
+- A real-window lifecycle workload reproduced high memory using the previous
+  rendering and packaging settings. It displayed generated 6400×1440 desktop
+  pixels across three monitors, selected 800×450 captures, and hid/reopened the
+  editor three times. The production idle timer ran without extra collections.
+- After the third capture settled in the tray, private committed memory was
+  517 MiB with compressed assemblies and GPU rendering, 441 MiB with uncompressed
+  assemblies and GPU rendering, and 46 MiB in the final 1.2.2 build. Total working
+  set fell from 469 MiB to 132 MiB; this includes shared pages.
+- With the editor still open, the final build settled at 51 MiB of private
+  committed memory after three seconds. The active document and visible history
+  stayed available. Undo/redo survived background cleanup.
+- Interactive checks covered real captures, ring drawing, Ctrl+Z/Ctrl+Y, and the
+  Performance setting at 125% display scaling. During small-image editing the
+  new build used about 56 MiB of private working set, compared with 343 MiB in the
+  previously running 1.2.1 process. These were different live editing sessions.
+
+These are observations on this GPU/driver and monitor setup, using small snips.
+They do not guarantee a fixed footprint for large images, pins, or crop history.
+Software rendering trades some drawing CPU work for lower persistent graphics
+memory. Hardware acceleration remains an explicit preference requiring a restart.
+
 ## Version 1.2.1
 
 - 65 app checks passed, including preview bounds, cache reuse, suspended history,

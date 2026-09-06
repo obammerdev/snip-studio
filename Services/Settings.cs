@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool KeepHistory { get; set; } = true;
     public int HistoryLimit { get; set; } = 30;
     public bool IncludeCursor { get; set; }
+    public bool HardwareAcceleration { get; set; }
     public int DelaySeconds { get; set; }
     public string CaptureMode { get; set; } = "Region";
     public string SaveDirectory { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);

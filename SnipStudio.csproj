@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\SnipStudio.ico</ApplicationIcon>
     <AssemblyName>SnipStudio</AssemblyName>
     <RootNamespace>SnipStudio</RootNamespace>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Description>A thoughtful, native Windows capture and annotation studio.</Description>
     <Authors>Snip Studio</Authors>
     <Deterministic>true</Deterministic>

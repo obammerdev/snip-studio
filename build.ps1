@@ -30,7 +30,9 @@ try {
         Get-Content -LiteralPath (Join-Path $taskTestData 'self-test-results.json')
     }
     if ($Publish -or $Installer) {
-        & $taskDotnet publish SnipStudio.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false -p:RestoreConfigFile=NuGet.Config -o $PublishDirectory
+        # Keep runtime assemblies file-backed. Inno Setup / ZIP compress the download;
+        # compressing the running bundle would inflate assemblies into private memory.
+        & $taskDotnet publish SnipStudio.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=false -p:DebugType=None -p:DebugSymbols=false -p:RestoreConfigFile=NuGet.Config -o $PublishDirectory
         if ($LASTEXITCODE -ne 0) { throw 'Publishing failed.' }
         Copy-Item -LiteralPath 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md' -Destination $PublishDirectory -Force
         $taskLicenses = Join-Path $PublishDirectory 'licenses'

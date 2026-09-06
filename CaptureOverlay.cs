@@ -105,6 +105,11 @@ public sealed class CaptureOverlay : Window
         Trace("finish");
         Result = NativeDesktop.Crop(_frame, _selection); Close();
     }
+    internal void SelectForProbe(PixelRect selection, bool finish = false)
+    {
+        _selection = selection.Intersect(_frame.Bounds); _surface.InvalidateVisual();
+        if (finish) Finish();
+    }
     private void Trace(string action, Point? point = null)
     {
         if (!App.IsTestMode) return;
